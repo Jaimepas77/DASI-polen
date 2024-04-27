@@ -1,14 +1,22 @@
 Fichero con ideas para mejorar los resultados
 
-- Usar solo los datos de abril, mayo y junio 
+- Usar solo los datos de mayo y junio 
 (dado que son los únicos meses relevantes)
-
-- Simplificar la dirección del viento a cuatro valores (N, S, W, E)
-
-- Cambiar tmax y tmin por tmedia y varTemp
+    -> probado (mejora una poco)
 
 - Probar predicción sin usar histórico de polen
 (ver que variables son más relevantes, aparte del propio polen)
  y eliminar variables no relevantes
+    -> probado (me gusta más como intuye las tendencias generales)
 
-- 
+- Buscar un dataset de gramíneas que tenga datos más cercanos a Getafe
+
+
+___ ___ ___ ___ ___
+Otras ideas peores:
+- Simplificar el modelo para ver si funciona mejor solo prediciendo
+ si va a subir o bajar el polen mañana.
+
+- Simplificar la dirección del viento a cuatro valores (N, S, W, E)
+
+- Cambiar tmax y tmin por tmedia y varTemp
