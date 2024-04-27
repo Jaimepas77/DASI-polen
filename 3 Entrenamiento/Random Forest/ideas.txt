@@ -1,0 +1,14 @@
+Fichero con ideas para mejorar los resultados
+
+- Usar solo los datos de abril, mayo y junio 
+(dado que son los únicos meses relevantes)
+
+- Simplificar la dirección del viento a cuatro valores (N, S, W, E)
+
+- Cambiar tmax y tmin por tmedia y varTemp
+
+- Probar predicción sin usar histórico de polen
+(ver que variables son más relevantes, aparte del propio polen)
+ y eliminar variables no relevantes
+
+- 
