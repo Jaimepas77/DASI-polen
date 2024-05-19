@@ -9,10 +9,10 @@ app = Flask(__name__)
 
 #Carga de modelos
 models = {
-'RandomForest' : joblib.load('models/random_forest15_1.pkl'),
-'XGBoost' : joblib.load('models/XGBoost15_1.pkl'),
-'LSTM' : joblib.load('models/LSTM15_1.pkl'),
-'LSTMBir': joblib.load('models/LSTM Bir15_1.pkl'),
+'RandomForest' : joblib.load('../3 Entrenamiento/Random Forest/random_forest15_1.pkl'),
+'XGBoost' : joblib.load('../3 Entrenamiento/XGBoost/XGBoost15_1.pkl'),
+'LSTM' : joblib.load('../3 Entrenamiento/LSTM/LSTM15_1.pkl'),
+'LSTMBir': joblib.load('../3 Entrenamiento/LSTMBir/LSTM Bir15_1.pkl'),
 }
 def getPredictionData():
     #Dia para el que se quiere predecir el polen al día siguiente
@@ -83,7 +83,7 @@ def XGBoostFormat(predictionData):
     return predictionData.iloc[-1:]
 def LSTMFormat(predictionData):
     predictionData=predictionData.drop(columns=['granos_de_polen'])
-    scaler = joblib.load('models/LSTM15_1_scaler.pkl')
+    scaler = joblib.load('scaler/LSTM15_1_scaler.pkl')
     transformed_data = scaler.transform(predictionData)
     array = np.array(transformed_data)
     reshaped = array.reshape((array.shape[0], 1, array.shape[1]))
