@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Model Prediction</title>
+</head>
+<body>
+    <div id="flex-container">
+        <h1>Predicción de polen de gramíneas en Madrid</h1>
+    </div>
+    <div id="flex-container">
+        <p>Esta aplicación te permite realizar una predicción de la concentración de polen de gramíneas para mañana.</p>
+    </div>
+    <div id="flex-container">
+        <p>Para utilizar la aplicación selecciona un modelo de los disponibles y pulsa el botón <i>Realizar predicción</i></p>
+    </div>
+    <div id="flex-container">
+        <h2>Selecciona un modelo:</h2>
+    </div>
+    <div id="modelButtons">
+        <button onclick="setModel('RandomForest')">Random Forest</button>
+        <button onclick="setModel('XGBoost')">XGBoost</button>
+        <button onclick="setModel('LSTM')">LSTM</button>
+        <button onclick="setModel('LSTMBir')">LSTMBir</button>
+    </div>    
+    <div id="flex-container">
+        <form id="predictionForm">
+            <input type="submit" value="Realizar predicción">
+        </form>
+    </div>
+    <div id="flex-container">
+        <p id="result"></p>
+    </div>
+
+    <script>
+        let selectedModel = '';
+        function setModel(model) {
+            selectedModel = model;
+            console.log("Modelo seleccionado: " + selectedModel)
+            document.getElementById('modelButtons').querySelectorAll('button').forEach(button => {
+                button.disabled = false;
+            });
+            event.target.disabled = true;
+        }
+        document.getElementById('predictionForm').onsubmit = async function(event) {
+            event.preventDefault();
+            if (!selectedModel) {
+                alert('Selecciona un modelo antes de continuar');
+                return;
+            }
+            const response = await fetch('/predict', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    model: selectedModel,
+                })
+            });
+            const result = await response.json();
+            document.getElementById('result').innerText = 'Prediction: ' + result.prediction;
+        };
+    </script>
+    <style>
+        h1{
+            font-family: verdana;
+        }
+        h2{
+            font-family: verdana;
+        }
+        p{
+            font-family: verdana;
+            
+        }
+        button{
+            font-family: verdana;
+            font-size: large;
+        }
+        form{
+            font-family: verdana;
+            font-size: large;
+        }
+        #flex-container{
+            display: -webkit-flex;
+            display: flex;
+            -webkit-flex-direction:row;
+            flex-direction: row;
+        }
+        #model-buttons{
+            display: -webkit-flex;
+            display: flex;
+            -webkit-flex-direction:row;
+            flex-direction: row;
+        }
+        #result{
+            align-content: center;
+        }
+
+    </style>
+</body>
+</html>

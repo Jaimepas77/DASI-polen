@@ -8,12 +8,7 @@ para los modelos predictivos.
 import pandas as pd
 import os
 import numpy as np
-#función para sustituir el valor 88 (indeterminado) de la dirección del viento por nan
-def substitute_value(row):
-    if row['dir'] == 88:
-        return np.nan
-    else:
-        return row['dir']
+
 #columnas importantes para la predicción
 columnas = ['filename','prec','tmin','tmax','dir','velmedia','racha','sol','total']
 #se crea un dataframe con las columnas importantes
@@ -34,8 +29,8 @@ for filename in os.listdir(path):
                 df[col]=np.nan
         #Se seleccionan unicamente las columnas importantes
         df = df[['prec','tmin','tmax','dir','velmedia','racha', 'sol']]
-        #Se sustituyen los valores 88 de la direccion del viento
-        df['dir'] = df.apply(substitute_value, axis=1)
+        #Se sustituyen los valores 88 (indeterminado) por nan en la direccion del viento
+        df['dir'] = df['dir'].apply(lambda x: np.nan if x == 88 else x)
         #Se claculan los valores faltantes de cada columna
         nulls = df.isnull().sum()
         #Se suma el total de nulos en cada dataframe
