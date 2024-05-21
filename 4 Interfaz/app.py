@@ -14,9 +14,15 @@ models = {
 'LSTM' : joblib.load('../3 Entrenamiento/LSTM/LSTM15_1.pkl'),
 'LSTMBir': joblib.load('../3 Entrenamiento/LSTMBir/LSTM Bir15_1.pkl'),
 }
+#Variable global para guardar el resultado de llamar a la api
+predictionData = pd.DataFrame()
+#Obtiene los datos de los últimos 15 días de las api de AEMET y de la CAM
 def getPredictionData():
+    global predictionData
     #Dia para el que se quiere predecir el polen al día siguiente
-    hoy = datetime.date.today() - datetime.timedelta(days=4)
+    #hoy = datetime.date(2024,5,15) #Este día funciona porque hay suficientes datos de días anteriores, es posible que fechas futuras fallen
+    hoy = datetime.date.today() #Si la aplicación no funciona comentar esta línea y descomentar la anterior
+    
     #15 días antes
     fechaInicial = hoy - datetime.timedelta(days=15)
     #Request de los dato meteorológicos
@@ -52,10 +58,8 @@ def getPredictionData():
     polen=df[(df['captador']=='GETA') & (df['tipo_polinico'] == 'Gramíneas') & (df['fecha'].dt.date >= fechaInicial)]
     polen = polen.sort_values(by='fecha')
     polen['granos_de_polen'] = polen['granos_de_polen_x_metro_cubico'].ffill()
-
     #Se unen los dos dataframes
     merged =  pd.merge(meteo,polen,on='fecha')
-
     #Columnas con datos importantes
     columnas=['granos_de_polen', 'prec', 'tmin', 'tmax', 'dir', 'velmedia', 'racha', 'sol','fecha']
     #Se crea un nuevo dataframe sol con las columnas relevantes
@@ -72,23 +76,28 @@ def getPredictionData():
     datos['mes'] = datos['fecha'].dt.month
     datos['dia'] = datos['fecha'].dt.dayofyear
     datos=datos.drop(columns=['fecha'])
-    return datos.iloc[-1:]
-
-def randomForestFormat(predictionData):
-    predictionData=predictionData.drop(columns=['granos_de_polen','dia','mes','semana'])
-    return predictionData.iloc[-1:]
-
-def XGBoostFormat(predictionData):
-    predictionData=predictionData.drop(columns=['dia','mes','semana'])
-    return predictionData.iloc[-1:]
-def LSTMFormat(predictionData):
-    predictionData=predictionData.drop(columns=['granos_de_polen'])
+    predictionData = datos.iloc[-1:]
+#Adapta el formato a la entrada del RandomForest
+def randomForestFormat(data):
+    returnData = data
+    returnData=returnData.drop(columns=['granos_de_polen','dia','mes','semana'])
+    return returnData.iloc[-1:]
+#Adapta el formato a la entrada del XGBoost
+def XGBoostFormat(data):
+    returnData=data
+    returnData=returnData.drop(columns=['dia','mes','semana'])
+    return returnData.iloc[-1:]
+#Adapta los datos a la entrada de las LSTM
+def LSTMFormat(data):
+    #Se carga el scaler utilizado en el entrenamiento de la LSTM
     scaler = joblib.load('scaler/LSTM15_1_scaler.pkl')
-    transformed_data = scaler.transform(predictionData)
+    returnData = data
+    returnData=returnData.drop(columns=['granos_de_polen'])
+    transformed_data = scaler.transform(returnData)
     array = np.array(transformed_data)
     reshaped = array.reshape((array.shape[0], 1, array.shape[1]))
     return reshaped[-1:]
-
+#Transforma el resultado numérico a categórico
 def predictionToCategory(prediction):
     result=""
     if prediction < 25:
@@ -105,25 +114,50 @@ def home():
 
 @app.route('/predict', methods=['POST'])
 def predict():
+    global predictionData
     # Get data from POST request
     data = request.json
     model_name=data['model']
-    model=models.get(model_name)
-    if model is None:
-        return jsonify({'error': 'Model not found'}), 400
-    #Se obtienen los datos de las apis de AEMET y de la CAM
-    predictionData=getPredictionData()
-    #Se adapta el formato a la entrada de cada modelo
-    if model_name == 'RandomForest':
-        predictionData=randomForestFormat(predictionData)
-    elif model_name == 'XGBoost':
-        predictionData=XGBoostFormat(predictionData)
-    elif model_name == 'LSTM' or model_name == 'LSTMBir':
-        predictionData=LSTMFormat(predictionData)
-    #Predicción
-    prediction = model.predict(predictionData)
-    #Devuelve la predicción en texto
-    return jsonify({'prediction': predictionToCategory(prediction[0])})
+    if model_name != 'All':
+        model=models.get(model_name)
+        if model is None:
+            return jsonify({'error': 'Model not found'}), 400
+        #Se adapta el formato a la entrada de cada modelo
+        if model_name == 'RandomForest':
+            predictionDataFormatted=randomForestFormat(predictionData)
+        elif model_name == 'XGBoost':
+            predictionDataFormatted=XGBoostFormat(predictionData)
+        elif model_name == 'LSTM' or model_name == 'LSTMBir':
+            predictionDataFormatted=LSTMFormat(predictionData)
+        #Predicción
+        prediction = model.predict(predictionDataFormatted)
+        #Devuelve la predicción en texto
+        pred_str=""
+        if model_name == 'LSTM' or model_name == 'LSTMBir':
+            pred_str=str(prediction[0][0])
+        else:
+            pred_str=str(prediction[0])
+        return jsonify({'prediction': 'Utilizando el modelo '+model_name+' se ha obtenido una predicción de '+ pred_str +' lo cual es un valor de polen ' + predictionToCategory(prediction[0])+'.'})
+    else:
+        rf=models.get('RandomForest')
+        xgb=models.get('XGBoost')
+        lstm=models.get('LSTM')
+        lstmB=models.get('LSTMBir')
+        prediction1 = predictionData
+        prediction2 = prediction1
+        prediction3 =  prediction1
+        prediction4 = prediction1
+        prediction1 = randomForestFormat(prediction1)
+        prediction2 = XGBoostFormat(prediction2)
+        prediction3 = LSTMFormat(prediction3)
+        prediction4 = LSTMFormat(prediction4)
+        prediction_mean=(rf.predict(prediction1)[0] + xgb.predict(prediction2)[0] + lstm.predict(prediction3)[0][0] + lstmB.predict(prediction4)[0][0]) / float(len(models))
+        return jsonify({'prediction' : 'La predicción media de todos los modelos es ' + str(prediction_mean) + ' lo cual es un valor de polen '+ predictionToCategory(prediction_mean) + '.'})
+
+
 
 if __name__ == '__main__':
+    getPredictionData()
     app.run(debug=True)
+    
+ 
