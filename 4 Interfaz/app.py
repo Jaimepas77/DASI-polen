@@ -20,8 +20,9 @@ predictionData = pd.DataFrame()
 def getPredictionData():
     global predictionData
     #Dia para el que se quiere predecir el polen al día siguiente
-    #hoy = datetime.date(2024,5,15) #Este día funciona porque hay suficientes datos de días anteriores, es posible que fechas futuras fallen
+    # hoy = datetime.date(2024,5,15) #Este día funciona porque hay suficientes datos de días anteriores, es posible que fechas futuras fallen
     hoy = datetime.date.today() #Si la aplicación no funciona comentar esta línea y descomentar la anterior
+    # hoy = datetime.date(2024,5,1) #Este día ofrece predicciones en alto, medio y bajo dependiendo del modelo elegido
     
     #15 días antes
     fechaInicial = hoy - datetime.timedelta(days=15)
@@ -99,6 +100,9 @@ def LSTMFormat(data):
     return reshaped[-1:]
 #Transforma el resultado numérico a categórico
 def predictionToCategory(prediction):
+    if np.isnan(prediction):
+        return "Nulo"
+
     result=""
     if prediction < 25:
         result = "Bajo"
@@ -134,10 +138,12 @@ def predict():
         #Devuelve la predicción en texto
         pred_str=""
         if model_name == 'LSTM' or model_name == 'LSTMBir':
-            pred_str=str(prediction[0][0])
+            pred_str=str(round(prediction[0][0], 2))
         else:
-            pred_str=str(prediction[0])
-        return jsonify({'prediction': 'Utilizando el modelo '+model_name+' se ha obtenido una predicción de '+ pred_str +' lo cual es un valor de polen ' + predictionToCategory(prediction[0])+'.'})
+            pred_str=str(round(prediction[0], 2))
+        return jsonify({'prediction': f'Utilizando el modelo {model_name} se ha obtenido\
+                         una predicción de {pred_str} granos de polen por metro cúbico lo\
+                           cual es un valor de polen {predictionToCategory(prediction[0])}.'})
     else:
         rf=models.get('RandomForest')
         xgb=models.get('XGBoost')
@@ -151,8 +157,10 @@ def predict():
         prediction2 = XGBoostFormat(prediction2)
         prediction3 = LSTMFormat(prediction3)
         prediction4 = LSTMFormat(prediction4)
-        prediction_mean=(rf.predict(prediction1)[0] + xgb.predict(prediction2)[0] + lstm.predict(prediction3)[0][0] + lstmB.predict(prediction4)[0][0]) / float(len(models))
-        return jsonify({'prediction' : 'La predicción media de todos los modelos es ' + str(prediction_mean) + ' lo cual es un valor de polen '+ predictionToCategory(prediction_mean) + '.'})
+        prediction_mean = (rf.predict(prediction1)[0] + xgb.predict(prediction2)[0] + lstm.predict(prediction3)[0][0] + lstmB.predict(prediction4)[0][0]) / float(len(models))
+        return jsonify({'prediction' : f'La predicción media de todos los modelos es\
+                         {str(round(prediction_mean, 2))} granos de polen por metro cúbico\
+                              lo cual es un valor de polen {predictionToCategory(prediction_mean)}.'})
 
 
 

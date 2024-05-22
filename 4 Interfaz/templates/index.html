@@ -58,7 +58,12 @@
             });
             document.getElementById('result').innerText = 'Calculando predicción, espere un momento...';
             const result = await response.json();
-            document.getElementById('result').innerText = result.prediction;
+            // Highlight the word "Alto" in the result
+            let out = result.prediction;
+            out = out.replace('Alto', '<b><span style="color: red;">Alto</span></b>');
+            out = out.replace('Medio', '<b><span style="color: orange;">Medio</span></b>');
+            out = out.replace('Bajo', '<b><span style="color: green;">Bajo</span></b>');
+            document.getElementById('result').innerHTML = out;
         };
     </script>
     <style>
